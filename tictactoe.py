@@ -9,25 +9,55 @@ class Board:
             board = [0] * 9
         self.board = tuple(board)
 
-    def game_over(self):
+    def winner(self):
         board = self.board
+
         # Check diagonals
         if board[0] and board[0] == board[4] == board[8]:
-            return True
+            return board[0]
         if board[2] and board[2] == board[4] == board[6]:
-            return True
+            return board[2]
 
         # Check rows
         for row in range(3):
             if board[row*3] and board[row*3] == board[(row*3)+1] == board[(row*3)+2]:
-                return True
+                return board[row*3]
         
         # Check cols
         for col in range(3):
             if board[col] and board[col] == board[col+3] == board[col+6]:
-                return True
+                return board[col]
+
+        return 0
+
+    def game_over(self):
+        board = self.board
+
+        # Check if all squares are occupied
+        if sum(bool(b) for b in board) == 9:
+            return True
+
+        # Check if there is a winner
+        if self.winner():
+            return True
         
         return False
+
+    def generate_unique_legal_moves(self):
+        # Generate legal moves from given board, ignoring symmetries
+
+        unique_moves = []
+        moves_hash = set()
+
+        for move in self.generate_legal_moves():
+            move_hash = hash(move)
+            if move_hash in moves_hash:
+                continue
+
+            moves_hash.add(move_hash)
+            unique_moves.append(move)
+
+        return unique_moves
 
     def generate_legal_moves(self):
         # Generate legal moves from given board
@@ -36,28 +66,25 @@ class Board:
         if self.game_over():
             return []
 
-        # Check side to move
-        nX = sum(1 for n in self.board if n==X)
-        nO = sum(1 for n in self.board if n==O)
-        
-        if nX - nO not in (0, 1):
-            return []
+        side_to_move = self.side_to_move()
 
-        side_to_move = X if nX == nO else O
-
-        # legal_moves_hash = set()
         legal_moves = []
-
         for square in range(9):
             if self.board[square] == 0:
                 new_move = Board(self.board[:square] + (side_to_move,) + self.board[square+1:])
                 legal_moves.append(new_move)
-                # hash_new_move = new_move.__hash__()
-                # if hash_new_move not in legal_moves_hash:
-                #     legal_moves.append(new_move)
-                #     legal_moves_hash.add(hash_new_move)
-
         return legal_moves
+
+    def side_to_move(self):
+        # Check side to move
+
+        nX = sum(1 for n in self.board if n==X)
+        nO = sum(1 for n in self.board if n==O)
+        
+        assert nX - nO in (0, 1)
+
+        side_to_move = X if nX == nO else O
+        return side_to_move
 
     def rotate(self, r=1):
         return Board(Board._rotate(self.board, r=r))
@@ -133,19 +160,33 @@ class Board:
 
 
 
-def count_boards(s=None, board = None):
-    if s is None:
-        board = Board()
-        s = set()
-        s.add(board)
-    
-    for b in board.generate_legal_moves():
-        s.add(b)
-        count_boards(s, b)
-    
-    return s
+if __name__ == '__main__':
 
-boards = count_boards()
-print('Valid boards:', len(set(b.board for b in boards)))
-print('Equivalent boards:', len(set(hash(b) for b in boards)))
- 
+    def count_boards(board=None, boards=None, boards_hashes=None):
+        if board is None:
+            board = Board()
+            boards = []
+            boards_hashes = set()
+
+            boards_hashes.add(hash(board))
+            boards.append(board)
+        
+        for b in board.generate_unique_legal_moves():
+            b_hash = hash(b)
+            if b_hash in boards_hashes:
+                continue
+
+            boards_hashes.add(b_hash)
+            boards.append(b)
+            count_boards(b, boards, boards_hashes)
+        
+        return boards
+
+
+    boards = count_boards()
+    print('Equivalent boards:', len(boards))
+
+    outcome = [b.winner() for b in boards]
+    print('Games where X wins:', sum(out == 1 for out in outcome))
+    print('Games where O wins:', sum(out == 2 for out in outcome))
+    print('Games where neither wins:', sum(out == 0 for out in outcome))
