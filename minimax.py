@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     engine = MiniMax()
 
-    b = Board((0, X, 0, 0, O, 0, X, 0, 0))
+    b = Board((X, O, 0, 0, 0, 0, 0, 0, 0))
 
     print(engine.search(b))
     print(len(engine.board_evals))
