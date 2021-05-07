@@ -18,8 +18,8 @@ class MiniMax:
         board_hash = hash(board)
         if board_hash in self.board_evals:
             self.hits += 1
-            bestmove, score = self.board_evals[board_hash].values()
-            return score
+            bestmove, bestscore, *_ = self.board_evals[board_hash].values()
+            return bestscore
 
         if board.game_over():
             winner = board.winner()
@@ -36,13 +36,20 @@ class MiniMax:
 
         bestscore = -999
         bestmove = None
+        moves = []
+        scores = []
         for move in board.generate_unique_legal_moves():
             score = -self.search(move)
             if score > bestscore:
                 bestscore = score
                 bestmove = move
+            moves.append(move)
+            scores.append(score)
 
-        self.board_evals[board_hash] = {'bestmove': bestmove, 'score': bestscore}
+        self.board_evals[board_hash] = {
+            'bestmove': bestmove, 'bestscore': bestscore,
+            'moves': moves, 'scores': scores,    
+        }
         return bestscore
 
 
